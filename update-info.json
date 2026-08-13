@@ -1,0 +1,12 @@
+{
+  "latestVersion": "1.1.2",
+  "releaseDate": "2026-08-13",
+  "changelog": [
+    "新增安装后自动检测更新功能",
+    "更新弹窗显示新版本号与本次更新内容",
+    "用户可选择允许更新或暂不更新",
+    "设置页新增「检查更新」入口"
+  ],
+  "downloadUrl": "https://github.com/HANjiao92/hanjiaoGAME/releases/latest",
+  "homepage": "https://github.com/HANjiao92/hanjiaoGAME"
+}
