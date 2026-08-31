@@ -9,7 +9,305 @@
       :root {
         --bg: #0f172a;
         --card: #1e293b;
+        --primary: #6366f1;<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>hanjiaoGAME · 扫码登录确认</title>
+    <script src="https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --card: #1e293b;
         --primary: #6366f1;
+        --primary-d: #4f46e5;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      .card {
+        width: min(92vw, 380px);
+        background: var(--card);
+        border-radius: 16px;
+        padding: 28px 24px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+        text-align: center;
+      }
+      h1 { font-size: 1.25rem; margin: 0 0 4px; }
+      .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+      label { display: block; text-align: left; font-size: 0.8rem; color: var(--muted); margin: 0 0 6px; }
+      input {
+        width: 100%;
+        padding: 11px 12px;
+        margin-bottom: 14px;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        background: #0f172a;
+        color: var(--text);
+        font-size: 0.95rem;
+      }
+      input:focus { outline: none; border-color: var(--primary); }
+      button {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:hover { background: var(--primary-d); }
+      button:disabled { opacity: 0.6; cursor: default; }
+      .msg { font-size: 0.85rem; margin-top: 14px; min-height: 1.2em; }
+      .err { color: #f87171; }
+      .ok { color: #4ade80; }
+      .muted { color: var(--muted); font-size: 0.8rem; }
+      .hidden { display: none; }
+      .badge {
+        display: inline-block;
+        background: rgba(99, 102, 241, 0.15);
+        color: #a5b4fc;
+        border-radius: 999px;
+        padding: 4px 12px;
+        font-size: 0.78rem;
+        margin-bottom: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>hanjiaoGAME</h1>
+      <div class="sub">扫码登录确认</div>
+      <div id="app"></div>
+    </div>
+
+    <script>
+      // ===== 配置（公开匿名密钥，可安全置于静态页）=====
+      const SUPABASE_URL = 'https://aoyczcxzjtqovhjxsjjm.supabase.co';
+      const SUPABASE_ANON_KEY = 'sb_publishable_83-uWmzOp2a2v3lbSw4U3Q_oS7Ncdb4';
+
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const app = document.getElementById('app');
+
+      const params = new URLSearchParams(location.search);
+      const sessionId = params.get('session');
+
+      function render(html) {
+        app.innerHTML = html;
+      }
+      function msg(text, type) {
+        const el = document.getElementById('msg');
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = 'msg ' + (type || '');
+      }
+
+      function renderInvalid() {
+        render('<p class="err">链接无效，请使用 hanjiaoGAME 桌面端重新生成二维码。</p>');
+      }
+
+      // 当前正在验证的邮箱（用于重发与 verifyOtp）
+      let currentEmail = '';
+      // 重发冷却秒数
+      let resendCooldown = 0;
+      let resendTimer = null;
+
+      function clearResendTimer() {
+        if (resendTimer) {
+          clearInterval(resendTimer);
+          resendTimer = null;
+        }
+      }
+
+      function startResendTimer() {
+        clearResendTimer();
+        resendCooldown = 60;
+        const btn = document.getElementById('resendBtn');
+        const updateBtn = () => {
+          if (!btn) return;
+          if (resendCooldown > 0) {
+            btn.disabled = true;
+            btn.textContent = resendCooldown + ' 秒后可重发';
+          } else {
+            btn.disabled = false;
+            btn.textContent = '重新发送验证码';
+          }
+        };
+        updateBtn();
+        resendTimer = setInterval(() => {
+          resendCooldown--;
+          updateBtn();
+          if (resendCooldown <= 0) clearResendTimer();
+        }, 1000);
+      }
+
+      function renderLogin() {
+        render(`
+          <span class="badge">第 1 步 / 2</span>
+          <p class="muted">请输入你的 hanjiaoGAME 邮箱，我们将发送验证码用于确认本次扫码登录。</p>
+          <label for="email">邮箱</label>
+          <input id="email" type="email" placeholder="you@example.com" autocomplete="username" />
+          <button id="sendBtn">发送验证码</button>
+          <div id="msg" class="msg"></div>
+        `);
+        const emailInput = document.getElementById('email');
+        if (currentEmail) emailInput.value = currentEmail;
+
+        document.getElementById('sendBtn').onclick = async () => {
+          const email = emailInput.value.trim();
+          if (!email) {
+            msg('请输入邮箱', 'err');
+            return;
+          }
+          msg('发送中…');
+          const { error } = await client.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: true },
+          });
+          if (error) {
+            msg(error.message || '发送失败', 'err');
+            return;
+          }
+          currentEmail = email;
+          renderCodeStep();
+        };
+      }
+
+      function renderCodeStep() {
+        render(`
+          <span class="badge">第 1 步 / 2</span>
+          <p class="muted">验证码已发送至 <b>${currentEmail}</b>，请查收邮件并输入 8 位验证码。</p>
+          <label for="code">验证码</label>
+          <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="8 位验证码" maxlength="8" />
+          <button id="verifyBtn">验证并继续</button>
+          <button id="resendBtn" style="margin-top:10px;background:transparent;color:#a5b4fc;border:1px solid #334155;">重新发送验证码</button>
+          <div id="msg" class="msg"></div>
+        `);
+        startResendTimer();
+        document.getElementById('verifyBtn').onclick = async () => {
+          const code = document.getElementById('code').value.trim();
+          if (!code) {
+            msg('请输入验证码', 'err');
+            return;
+          }
+          msg('验证中…');
+          const { data, error } = await client.auth.verifyOtp({
+            email: currentEmail,
+            token: code,
+            type: 'email',
+          });
+          if (error || !data.user) {
+            msg(error?.message || '验证码无效', 'err');
+            return;
+          }
+          clearResendTimer();
+          renderConfirm(data.user);
+        };
+        document.getElementById('resendBtn').onclick = async () => {
+          if (resendCooldown > 0) return;
+          msg('发送中…');
+          const { error } = await client.auth.signInWithOtp({
+            email: currentEmail,
+            options: { shouldCreateUser: true },
+          });
+          if (error) {
+            msg(error.message || '发送失败', 'err');
+            return;
+          }
+          msg('验证码已重新发送', 'ok');
+          startResendTimer();
+        };
+      }
+
+      async function renderConfirm(user) {
+        if (!user) {
+          renderLogin();
+          return;
+        }
+        // 检查会话行状态
+        const { data, error } = await client
+          .from('qr_login_sessions')
+          .select('status, expires_at')
+          .eq('id', sessionId)
+          .maybeSingle();
+        if (error || !data) {
+          renderExpired();
+          return;
+        }
+        if (data.status === 'confirmed') {
+          renderSuccess();
+          return;
+        }
+        if (data.status === 'expired' || new Date(data.expires_at) < new Date()) {
+          renderExpired();
+          return;
+        }
+        render(`
+          <span class="badge">第 2 步 / 2</span>
+          <p>确认在 <b>hanjiaoGAME 桌面端</b> 登录以下账号？</p>
+          <p class="muted">${user.email || user.id}</p>
+          <button id="confirmBtn">确认登录</button>
+          <div id="msg" class="msg"></div>
+        `);
+        document.getElementById('confirmBtn').onclick = async () => {
+          msg('确认中…');
+          const { error: updErr } = await client
+            .from('qr_login_sessions')
+            .update({ status: 'confirmed', user_id: user.id })
+            .eq('id', sessionId)
+            .eq('status', 'pending');
+          if (updErr) {
+            msg(updErr.message || '确认失败', 'err');
+            return;
+          }
+          renderSuccess();
+        };
+      }
+
+      function renderSuccess() {
+        render(`
+          <div style="font-size:2.4rem">✅</div>
+          <p class="ok">已确认，请在桌面端继续。</p>
+          <p class="muted">你可以关闭本页面了。</p>
+        `);
+      }
+
+      function renderExpired() {
+        render(`
+          <p class="err">二维码已失效。</p>
+          <p class="muted">请在桌面端点击「刷新二维码」后重新扫描。</p>
+        `);
+      }
+
+      if (!sessionId) {
+        renderInvalid();
+      } else {
+        (async () => {
+          const { data } = await client.auth.getSession();
+          if (data.session?.user) {
+            renderConfirm(data.session.user);
+          } else {
+            renderLogin();
+          }
+        })();
+      }
+    </script>
+  </body>
+</html>
+
         --primary-d: #4f46e5;
         --text: #e2e8f0;
         --muted: #94a3b8;
