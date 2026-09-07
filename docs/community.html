@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>社区墙 — hanjiaoGAME</title>
+<meta name="description" content="hanjiaoGAME 社区墙：登录后发言的玩家留言墙与 Bug 反馈墙，每条需 ≥100 字，脏话自动屏蔽。账号与客户端完全打通。" />
+<style>
+  :root{
+    --bg:#0F172A; --bg2:#0b1220; --card:#1E293B; --card2:#172033;
+    --line:#2a3a52; --brand:#6366F1; --brand2:#818cf8; --brand-glow:rgba(99,102,241,.45);
+    --text:#E2E8F0; --muted:#94a3b8; --green:#22c55e; --amber:#f59e0b; --red:#f87171;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:"Segoe UI",system-ui,-apple-system,"Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+
+  nav{position:sticky;top:0;z-index:50;background:rgba(15,23,42,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+  .nav-in{display:flex;align-items:center;gap:28px;height:64px;}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:.5px;}
+  .logo .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brand),#a855f7);display:grid;place-items:center;font-size:18px;box-shadow:0 0 18px var(--brand-glow);}
+  .nav-links{display:flex;gap:22px;margin-left:8px;}
+  .nav-links a{color:var(--muted);font-size:15px;font-weight:600;transition:.2s;}
+  .nav-links a:hover,.nav-links a.active{color:var(--text);}
+  .nav-cta{margin-left:auto;}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:none;font-weight:700;font-size:15px;border-radius:10px;padding:11px 22px;transition:.2s;}
+  .btn-primary{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;box-shadow:0 6px 22px var(--brand-glow);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px var(--brand-glow);}
+  .btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--brand);color:#fff;}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
+
+  .hero{background:radial-gradient(900px 360px at 80% -20%,rgba(99,102,241,.26),transparent 60%),linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);padding:64px 0 54px;}
+  .hero h1{font-size:42px;font-weight:850;letter-spacing:-.5px;}
+  .hero h1 .hl{background:linear-gradient(120deg,var(--brand2),#c084fc);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .hero p.sub{margin-top:14px;color:var(--muted);font-size:16px;max-width:720px;}
+  .bar{width:42px;height:4px;border-radius:3px;background:linear-gradient(90deg,var(--brand),#a855f7);margin-bottom:18px;}
+
+  .walls-wrap{padding:48px 0 64px;}
+
+  /* 登录卡片 */
+  .auth-card{max-width:520px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;}
+  .auth-card h2{font-size:22px;font-weight:800;margin-bottom:8px;}
+  .auth-card .sub{color:var(--muted);font-size:14px;margin-bottom:20px;}
+  .nick{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;}
+  .nick:focus{outline:none;border-color:var(--brand);}
+  .auth-row{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap;}
+  .auth-msg{color:var(--red);font-size:13px;margin-top:12px;min-height:18px;}
+
+  /* 已登录用户条 */
+  .userbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:24px;font-size:14px;flex-wrap:wrap;}
+  .userbar b{display:inline-flex;align-items:center;font-weight:600;}
+  .userbar .who-name{color:var(--brand2);font-weight:700;margin:0 4px;}
+  .userbar .who-lv{color:var(--amber);font-size:12px;}
+
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px;gap:16px;flex-wrap:wrap;}
+  .sec-head h2{font-size:28px;font-weight:800;}
+  .sec-head p{color:var(--muted);font-size:14px;margin-top:6px;}
+
+  .walls-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .wall{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;}
+  .wall h3{font-size:18px;font-weight:800;margin-bottom:14px;}
+  .wall-input{width:100%;min-height:130px;resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14px;font-family:inherit;line-height:1.5;}
+  .wall-input:focus{outline:none;border-color:var(--brand);}
+  .wall-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:12px;}
+  .counter{font-size:13px;color:var(--muted);}
+  .counter.ok{color:var(--green);}
+  .wall-error{color:var(--red);font-size:13px;margin-top:8px;min-height:18px;}
+  .wall-list{margin-top:18px;display:flex;flex-direction:column;gap:10px;max-height:340px;overflow:auto;}
+  .wall-item{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+  .wall-item .meta{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+  .wall-item .meta .name{font-weight:700;color:var(--brand2);}
+  .wall-item .meta .lv{color:var(--amber);font-size:11px;}
+  .wall-item .meta .time{margin-left:auto;}
+  .wall-item .txt{font-size:14px;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+  .empty{color:var(--muted);font-size:13px;padding:8px 2px;}
+  .empty.err{color:var(--red);}
+
+  footer{border-top:1px solid var(--line);padding:34px 0;color:var(--muted);font-size:14px;}
+  .foot-in{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;}
+  .foot-links{display:flex;gap:20px;flex-wrap:wrap;}
+  .foot-in a{color:var(--brand2);font-weight:600;}
+  .foot-in a:hover{text-decoration:underline;}
+
+  @media(max-width:860px){
+    .hero h1{font-size:32px;}
+    .walls-grid{grid-template-columns:1fr;}
+    .nav-links{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <div class="logo"><span class="mark">🎮</span>hanjiaoGAME</div>
+    <div class="nav-links">
+      <a href="index.html">首页</a>
+      <a href="download.html">下载</a>
+      <a href="community.html" class="active">社区墙</a>
+    </div>
+    <a class="btn btn-ghost nav-cta" href="index.html">← 返回首页</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="bar"></div>
+    <h1>社区<span class="hl">墙</span></h1>
+    <p class="sub">用客户端同一账号（邮箱验证码）登录后即可发言。你的<b style="color:var(--text)">昵称、头像、等级与客户端完全同步</b>。每条需 <b style="color:var(--text)">≥100 字</b>，含脏话的内容会在服务端自动屏蔽为 *。所有内容对全体玩家可见。</p>
+  </div>
+</header>
+
+<section class="walls-wrap">
+  <div class="wrap">
+
+    <!-- 未登录：登录卡片 -->
+    <div id="loginWrap" class="auth-card">
+      <h2>🔐 登录后参与社区墙</h2>
+      <p class="sub">使用邮箱验证码登录（与客户端同一 Supabase 账号体系，无需密码）。登录后昵称 / 头像 / 等级自动取自你的客户端资料。</p>
+      <input id="emailInput" class="nick" type="email" placeholder="你的邮箱，如 you@example.com" />
+      <div id="otpRow" class="auth-row" style="display:none;">
+        <input id="otpInput" class="nick" type="text" inputmode="numeric" maxlength="8" placeholder="6 位验证码" style="max-width:200px;" />
+      </div>
+      <div class="auth-row">
+        <button id="sendBtn" class="btn btn-primary" onclick="sendOtp()">发送验证码</button>
+        <button id="verifyBtn" class="btn btn-primary" style="display:none;" onclick="verifyOtp()">登录</button>
+      </div>
+      <div id="authMsg" class="auth-msg"></div>
+    </div>
+
+    <!-- 已登录：用户条 + 墙 -->
+    <div id="appWrap" style="display:none;">
+      <div class="userbar">
+        <span>已登录：<b id="who"></b></span>
+        <button class="btn btn-ghost" onclick="signOut()">退出登录</button>
+      </div>
+
+      <div class="sec-head"><div>
+        <h2>玩家留言墙 / Bug 反馈墙</h2>
+        <p>留言墙畅所欲言，Bug 反馈帮我们把平台做得更好。每 30 秒最多发 3 条。</p>
+      </div></div>
+
+      <div class="walls-grid">
+        <div class="wall">
+          <h3>💬 玩家留言墙</h3>
+          <textarea id="msgInput" class="wall-input" placeholder="想对社区说的话…（至少 100 字）"></textarea>
+          <div class="wall-foot">
+            <span id="msgCount" class="counter">0 / 100</span>
+            <button class="btn btn-primary" onclick="submitWall('msg')">发布留言</button>
+          </div>
+          <div id="msgError" class="wall-error"></div>
+          <div id="msgList" class="wall-list"></div>
+        </div>
+
+        <div class="wall">
+          <h3>🐞 Bug 反馈墙</h3>
+          <textarea id="bugInput" class="wall-input" placeholder="描述你遇到的 Bug（含复现步骤更佳）…（至少 100 字）"></textarea>
+          <div class="wall-foot">
+            <span id="bugCount" class="counter">0 / 100</span>
+            <button class="btn btn-primary" onclick="submitWall('bug')">提交反馈</button>
+          </div>
+          <div id="bugError" class="wall-error"></div>
+          <div id="bugList" class="wall-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div>© 2026 hanjiaoGAME · 一个用爱发电的玩家游戏社区</div>
+    <div class="foot-links">
+      <a href="index.html">首页</a>
+      <a href="download.html">下载</a>
+      <a href="https://github.com/HANjiao92/hanjiaoGAME" target="_blank" rel="noopener">GitHub 仓库</a>
+      <a href="https://1857676219.share.123pan.cn/123pan/0GDUvd-9tOkv" target="_blank" rel="noopener">123 网盘</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://aoyczcxzjtqovhjxsjjm.supabase.co';
+  const SUPABASE_ANON = 'sb_publishable_83-uWmzOp2a2v3lbSw4U3Q_oS7Ncdb4';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // 与客户端 src/utils/constants.ts 的 AVATAR_PRESETS 完全一致（用于还原同一头像）
+  const AVATAR_PRESETS = [
+    { id:'avatar_01', themeColor:'#F59E0B', accent:'#FDE68A', emoji:'🦊' },
+    { id:'avatar_02', themeColor:'#8B5CF6', accent:'#C4B5FD', emoji:'🐱' },
+    { id:'avatar_03', themeColor:'#10B981', accent:'#A7F3D0', emoji:'🐻' },
+    { id:'avatar_04', themeColor:'#EC4899', accent:'#FBCFE8', emoji:'🐰' },
+    { id:'avatar_05', themeColor:'#3B82F6', accent:'#BFDBFE', emoji:'🐼' },
+    { id:'avatar_06', themeColor:'#F97316', accent:'#FED7AA', emoji:'🦁' },
+    { id:'avatar_07', themeColor:'#22C55E', accent:'#BBF7D0', emoji:'🐸' },
+    { id:'avatar_08', themeColor:'#06B6D4', accent:'#A5F3FC', emoji:'🐧' },
+    { id:'avatar_09', themeColor:'#6366F1', accent:'#A5B4FC', emoji:'🤖' },
+    { id:'avatar_10', themeColor:'#64748B', accent:'#E2E8F0', emoji:'👻' }
+  ];
+
+  let BAD_WORDS = [];
+  let currentUser = null;
+  let currentProfile = null;   // 登录后从 profiles 表取到的真实资料
+
+  function $(id){ return document.getElementById(id); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+  function escapeAttr(s){
+    return String(s).replace(/"/g,'%22').replace(/</g,'%3C').replace(/>/g,'%3E');
+  }
+  function fmtTime(t){
+    const d = new Date(t); const p = function(n){ return ('0'+n).slice(-2); };
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+  }
+  function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+  function maskBad(str){
+    let s = str;
+    for(const w of BAD_WORDS){
+      if(!w) continue;
+      try{ s = s.replace(new RegExp(escapeReg(w),'g'), '*'.repeat(w.length)); }catch(e){}
+    }
+    return s;
+  }
+  function profileName(p){
+    if(!p) return '玩家';
+    return p.display_name || p.username || (currentUser && currentUser.email ? currentUser.email.split('@')[0] : '玩家');
+  }
+  // 还原与客户端一致的头像（优先自定义图，否则预设 SVG 圆圈 + emoji）
+  function avatarHtml(avatarId, customUrl, size){
+    if(customUrl){
+      return '<img src="'+escapeAttr(customUrl)+'" width="'+size+'" height="'+size+'" style="border-radius:50%;object-fit:cover;vertical-align:middle;" alt="" />';
+    }
+    const p = AVATAR_PRESETS.find(a=>a.id===avatarId) || AVATAR_PRESETS[0];
+    const uid = 'av'+Math.random().toString(36).slice(2,8);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="'+size+'" height="'+size+'" style="vertical-align:middle;">'
+      + '<defs><radialGradient id="'+uid+'" cx="50%" cy="32%" r="75%"><stop offset="0%" stop-color="'+p.accent+'"/><stop offset="100%" stop-color="'+p.themeColor+'"/></radialGradient></defs>'
+      + '<circle cx="60" cy="60" r="60" fill="url(#'+uid+')"/>'
+      + '<circle cx="60" cy="60" r="60" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>'
+      + '<text x="60" y="62" font-size="62" text-anchor="middle" dominant-baseline="central">'+p.emoji+'</text></svg>';
+    return svg;
+  }
+
+  // ---------- 登录流程（邮箱验证码 OTP） ----------
+  function setAuthMsg(m){ $('authMsg').textContent = m || ''; }
+
+  async function sendOtp(){
+    const email = $('emailInput').value.trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ setAuthMsg('请输入有效邮箱'); return; }
+    $('sendBtn').disabled = true; setAuthMsg('正在发送验证码…');
+    const { error } = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
+    $('sendBtn').disabled = false;
+    if(error){ setAuthMsg('发送失败：' + error.message); return; }
+    setAuthMsg('验证码已发送至 ' + email + '，请查收（也检查垃圾邮件）');
+    $('otpRow').style.display = 'flex';
+    $('sendBtn').style.display = 'none';
+    $('verifyBtn').style.display = 'inline-flex';
+    $('otpInput').focus();
+  }
+
+  async function verifyOtp(){
+    const email = $('emailInput').value.trim();
+    const token = $('otpInput').value.trim();
+    if(!token){ setAuthMsg('请输入验证码'); return; }
+    $('verifyBtn').disabled = true;
+    const { data, error } = await sb.auth.verifyOtp({ email, token, type:'email' });
+    $('verifyBtn').disabled = false;
+    if(error){ setAuthMsg('验证失败：' + error.message); return; }
+    // onAuthStateChange 会触发 enterApp
+  }
+
+  async function signOut(){
+    await sb.auth.signOut();
+    // onAuthStateChange 会触发 showLogin
+  }
+
+  // 登录后拉取真实 profiles（与客户端同一数据源）
+  async function loadProfile(){
+    currentProfile = null;
+    try{
+      const { data, error } = await sb
+        .from('profiles')
+        .select('display_name, username, email, current_avatar_id, custom_avatar_url, level')
+        .eq('id', currentUser.id)
+        .single();
+      if(!error && data) currentProfile = data;
+    }catch(e){}
+  }
+
+  function renderUserbar(){
+    const p = currentProfile;
+    const name = profileName(p);
+    const lvl = (p && p.level) ? p.level : 1;
+    $('who').innerHTML =
+      avatarHtml(p && p.current_avatar_id, p && p.custom_avatar_url, 26)
+      + '<span class="who-name">' + escapeHtml(name) + '</span>'
+      + '<span class="who-lv">Lv.' + lvl + '</span>';
+  }
+
+  async function enterApp(user){
+    currentUser = user;
+    $('loginWrap').style.display = 'none';
+    $('appWrap').style.display = 'block';
+    await loadProfile();     // 取客户端资料（昵称/头像/等级）
+    renderUserbar();
+    loadBadwords();
+    loadPosts('msg');
+    loadPosts('bug');
+  }
+
+  function showLogin(){
+    currentUser = null;
+    currentProfile = null;
+    $('appWrap').style.display = 'none';
+    $('loginWrap').style.display = 'block';
+    setAuthMsg('');
+    $('otpRow').style.display = 'none';
+    $('verifyBtn').style.display = 'none';
+    $('sendBtn').style.display = 'inline-flex';
+  }
+
+  // ---------- 墙数据 ----------
+  async function loadBadwords(){
+    try{
+      const { data, error } = await sb.from('badwords').select('word');
+      if(!error && data) BAD_WORDS = data.map(r=>r.word).filter(Boolean);
+    }catch(e){}
+  }
+
+  async function loadPosts(type){
+    const list = $('' + type + 'List');
+    const dbType = (type==='msg') ? 'message' : 'bug';
+    try{
+      const { data, error } = await sb
+        .from('wall_posts')
+        .select('*')
+        .eq('type', dbType)
+        .order('created_at', { ascending:false })
+        .limit(50);
+      if(error) throw error;
+      if(!data || !data.length){ list.innerHTML = '<div class="empty">还没有内容，来抢沙发～</div>'; return; }
+      list.innerHTML = data.map(function(r){
+        const who = escapeHtml(r.nickname || '匿名玩家');
+        const lvl = r.level || 1;
+        const av = avatarHtml(r.current_avatar_id, r.custom_avatar_url, 22);
+        return '<div class="wall-item">'
+          + '<div class="meta">'
+          +   av
+          +   '<span class="name">'+who+'</span>'
+          +   '<span class="lv">Lv.'+lvl+'</span>'
+          +   '<span class="time">'+fmtTime(r.created_at)+'</span>'
+          + '</div>'
+          + '<div class="txt">'+escapeHtml(r.content)+'</div></div>';
+      }).join('');
+    }catch(e){
+      list.innerHTML = '<div class="empty err">加载失败：'+(e.message||e)+'</div>';
+    }
+  }
+
+  function bindWall(type){
+    const input = $('' + type + 'Input');
+    const counter = $('' + type + 'Count');
+    input.addEventListener('input', function(){
+      const c = input.value.trim().length;
+      counter.textContent = c + ' / 100';
+      counter.classList.toggle('ok', c>=100);
+    });
+  }
+
+  async function submitWall(type){
+    if(!currentUser){ setAuthMsg('请先登录'); return; }
+    const input = $('' + type + 'Input');
+    const err = $('' + type + 'Error');
+    const raw = input.value.trim();
+    err.textContent = '';
+    if(raw.length < 100){ err.textContent = '至少需 100 字，当前 '+raw.length+' 字。'; return; }
+    const masked = maskBad(raw);
+    // 不传 nickname：由数据库触发器从 profiles 取真实昵称/头像/等级，确保与客户端一致且不可伪造
+    const payload = {
+      user_id: currentUser.id,
+      type: (type==='msg') ? 'message' : 'bug',
+      content: masked
+    };
+    try{
+      const { error } = await sb.from('wall_posts').insert(payload);
+      if(error) throw error;
+      input.value = '';
+      const counter = $('' + type + 'Count');
+      counter.textContent = '0 / 100'; counter.classList.remove('ok');
+      await loadPosts(type);
+    }catch(e){
+      err.textContent = '提交失败：' + (e.message || e);
+    }
+  }
+
+  // ---------- 初始化 ----------
+  window.addEventListener('DOMContentLoaded', function(){
+    bindWall('msg'); bindWall('bug');
+    sb.auth.getSession().then(function(res){
+      if(res.data && res.data.session){ enterApp(res.data.session.user); }
+      else { showLogin(); }
+    });
+    sb.auth.onAuthStateChange(function(_event, session){
+      if(session && session.user){ enterApp(session.user); }
+      else { showLogin(); }
+    });
+  });
+</script>
+
+</body>
+</html>
