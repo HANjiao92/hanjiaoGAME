@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>社区墙 — hanjiaoGAME</title>
-<meta name="description" content="hanjiaoGAME 社区墙：登录后发言的玩家留言墙与 Bug 反馈墙，每条需 ≥100 字，脏话自动屏蔽。账号与客户端完全打通。" />
+<meta name="description" content="hanjiaoGAME 社区墙：登录后发言的玩家留言墙与 Bug 反馈墙，支持点赞与楼中楼回复，每条 ≤100 字，脏话自动屏蔽。账号与客户端完全打通。" />
 <style>
   :root{
     --bg:#0F172A; --bg2:#0b1220; --card:#1E293B; --card2:#172033;
@@ -58,6 +58,7 @@
   .userbar b{display:inline-flex;align-items:center;font-weight:600;}
   .userbar .who-name{color:var(--brand2);font-weight:700;margin:0 4px;}
   .userbar .who-lv{color:var(--amber);font-size:12px;}
+  .userbar .who-role{color:#fbbf24;font-size:12px;font-weight:700;margin-left:6px;}
 
   .sec-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px;gap:16px;flex-wrap:wrap;}
   .sec-head h2{font-size:28px;font-weight:800;}
@@ -71,14 +72,48 @@
   .wall-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:12px;}
   .counter{font-size:13px;color:var(--muted);}
   .counter.ok{color:var(--green);}
+  .counter.over{color:#f87171;}
   .wall-error{color:var(--red);font-size:13px;margin-top:8px;min-height:18px;}
-  .wall-list{margin-top:18px;display:flex;flex-direction:column;gap:10px;max-height:340px;overflow:auto;}
+  .wall-list{margin-top:18px;display:flex;flex-direction:column;gap:10px;max-height:520px;overflow:auto;}
+
   .wall-item{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
   .wall-item .meta{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:8px;}
   .wall-item .meta .name{font-weight:700;color:var(--brand2);}
   .wall-item .meta .lv{color:var(--amber);font-size:11px;}
   .wall-item .meta .time{margin-left:auto;}
   .wall-item .txt{font-size:14px;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+
+  /* 操作行（点赞 / 回复） */
+  .actions{display:flex;align-items:center;gap:8px;margin-top:10px;}
+  .act{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;display:inline-flex;align-items:center;gap:6px;}
+  .act:hover{border-color:var(--brand);color:var(--text);}
+  .like-btn.liked{color:#f87171;border-color:#f87171;background:rgba(248,113,113,.08);}
+
+  /* 回复区 */
+  .reply-box{margin-top:10px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;}
+  .reply-input{width:100%;min-height:54px;resize:vertical;background:var(--bg2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13px;font-family:inherit;line-height:1.5;}
+  .reply-input:focus{outline:none;border-color:var(--brand);}
+  .reply-actions{display:flex;gap:8px;margin-top:8px;}
+  .reply-actions .btn{padding:7px 16px;font-size:13px;}
+  .reply-err{color:var(--red);font-size:12px;margin-top:6px;min-height:14px;}
+
+  .reply-list{margin-top:12px;display:flex;flex-direction:column;gap:8px;border-left:2px solid var(--line);padding-left:12px;}
+  .reply-list .empty{color:var(--muted);font-size:12px;padding:2px 0;}
+  .reply-item{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:9px;padding:9px 11px;}
+  .reply-item .meta{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;}
+  .reply-item .meta .name{font-weight:700;color:var(--brand2);}
+  .reply-item .meta .lv{color:var(--amber);font-size:11px;}
+  .reply-item .meta .time{margin-left:auto;}
+  .badge-admin{background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#1a1205;font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px;}
+  .reply-item .txt{font-size:13px;color:var(--text);white-space:pre-wrap;word-break:break-word;margin-top:4px;}
+  .reply-children{margin-top:8px;display:flex;flex-direction:column;gap:8px;border-left:2px solid var(--brand);padding-left:10px;}
+
+  /* 右键菜单 */
+  .ctx-menu{position:fixed;z-index:80;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.45);min-width:150px;}
+  .ctx-menu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--text);padding:9px 12px;border-radius:7px;font-size:14px;cursor:pointer;font-family:inherit;}
+  .ctx-menu button:hover{background:#3a1c22;color:#f87171;}
+  .ctx-menu button.info:hover{background:#1e2a44;color:#818cf8;}
+
   .empty{color:var(--muted);font-size:13px;padding:8px 2px;}
   .empty.err{color:var(--red);}
 
@@ -113,7 +148,7 @@
   <div class="wrap">
     <div class="bar"></div>
     <h1>社区<span class="hl">墙</span></h1>
-    <p class="sub">用客户端同一账号（邮箱验证码）登录后即可发言。你的<b style="color:var(--text)">昵称、头像、等级与客户端完全同步</b>。每条需 <b style="color:var(--text)">≥100 字</b>，含脏话的内容会在服务端自动屏蔽为 *。所有内容对全体玩家可见。</p>
+    <p class="sub">用客户端同一账号（邮箱验证码）登录后即可发言、点赞、回复。你的<b style="color:var(--text)">昵称、头像、等级与客户端完全同步</b>。每条需 <b style="color:var(--text)">≤100 字</b>，含脏话的内容会在服务端自动屏蔽为 *。所有内容对全体玩家可见。</p>
   </div>
 </header>
 
@@ -144,13 +179,13 @@
 
       <div class="sec-head"><div>
         <h2>玩家留言墙 / Bug 反馈墙</h2>
-        <p>留言墙畅所欲言，Bug 反馈帮我们把平台做得更好。每 30 秒最多发 3 条。</p>
+        <p>留言墙畅所欲言，Bug 反馈帮我们把平台做得更好。每 30 秒最多发 3 条。点赞、回复随意～</p>
       </div></div>
 
       <div class="walls-grid">
         <div class="wall">
           <h3>💬 玩家留言墙</h3>
-          <textarea id="msgInput" class="wall-input" placeholder="想对社区说的话…（至少 100 字）"></textarea>
+          <textarea id="msgInput" class="wall-input" placeholder="想对社区说的话…（100 字以内）"></textarea>
           <div class="wall-foot">
             <span id="msgCount" class="counter">0 / 100</span>
             <button class="btn btn-primary" onclick="submitWall('msg')">发布留言</button>
@@ -161,7 +196,7 @@
 
         <div class="wall">
           <h3>🐞 Bug 反馈墙</h3>
-          <textarea id="bugInput" class="wall-input" placeholder="描述你遇到的 Bug（含复现步骤更佳）…（至少 100 字）"></textarea>
+          <textarea id="bugInput" class="wall-input" placeholder="描述你遇到的 Bug（含复现步骤更佳）…（100 字以内）"></textarea>
           <div class="wall-foot">
             <span id="bugCount" class="counter">0 / 100</span>
             <button class="btn btn-primary" onclick="submitWall('bug')">提交反馈</button>
@@ -187,6 +222,8 @@
   </div>
 </footer>
 
+<div id="ctxMenu" class="ctx-menu" style="display:none"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const SUPABASE_URL = 'https://aoyczcxzjtqovhjxsjjm.supabase.co';
@@ -210,16 +247,16 @@
   let BAD_WORDS = [];
   let currentUser = null;
   let currentProfile = null;   // 登录后从 profiles 表取到的真实资料
+  let currentRole = 'user';    // 'user' | 'admin'
+  let myLikes = new Set();     // 当前用户已赞过的帖子 id
 
   function $(id){ return document.getElementById(id); }
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, function(m){
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(m){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
     });
   }
-  function escapeAttr(s){
-    return String(s).replace(/"/g,'%22').replace(/</g,'%3C').replace(/>/g,'%3E');
-  }
+  function escAttr(s){ return String(s).replace(/"/g,'%22').replace(/</g,'%3C').replace(/>/g,'%3E'); }
   function fmtTime(t){
     const d = new Date(t); const p = function(n){ return ('0'+n).slice(-2); };
     return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
@@ -237,20 +274,19 @@
     if(!p) return '玩家';
     return p.display_name || p.username || (currentUser && currentUser.email ? currentUser.email.split('@')[0] : '玩家');
   }
-  // 还原与客户端一致的头像（优先自定义图，否则预设 SVG 圆圈 + emoji）
   function avatarHtml(avatarId, customUrl, size){
     if(customUrl){
-      return '<img src="'+escapeAttr(customUrl)+'" width="'+size+'" height="'+size+'" style="border-radius:50%;object-fit:cover;vertical-align:middle;" alt="" />';
+      return '<img src="'+escAttr(customUrl)+'" width="'+size+'" height="'+size+'" style="border-radius:50%;object-fit:cover;vertical-align:middle;" alt="" />';
     }
     const p = AVATAR_PRESETS.find(a=>a.id===avatarId) || AVATAR_PRESETS[0];
     const uid = 'av'+Math.random().toString(36).slice(2,8);
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="'+size+'" height="'+size+'" style="vertical-align:middle;">'
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="'+size+'" height="'+size+'" style="vertical-align:middle;">'
       + '<defs><radialGradient id="'+uid+'" cx="50%" cy="32%" r="75%"><stop offset="0%" stop-color="'+p.accent+'"/><stop offset="100%" stop-color="'+p.themeColor+'"/></radialGradient></defs>'
       + '<circle cx="60" cy="60" r="60" fill="url(#'+uid+')"/>'
       + '<circle cx="60" cy="60" r="60" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>'
       + '<text x="60" y="62" font-size="62" text-anchor="middle" dominant-baseline="central">'+p.emoji+'</text></svg>';
-    return svg;
   }
+  function avatarHtmlFor(r, size){ return avatarHtml(r.current_avatar_id, r.custom_avatar_url, size); }
 
   // ---------- 登录流程（邮箱验证码 OTP） ----------
   function setAuthMsg(m){ $('authMsg').textContent = m || ''; }
@@ -274,7 +310,7 @@
     const token = $('otpInput').value.trim();
     if(!token){ setAuthMsg('请输入验证码'); return; }
     $('verifyBtn').disabled = true;
-    const { data, error } = await sb.auth.verifyOtp({ email, token, type:'email' });
+    const { error } = await sb.auth.verifyOtp({ email, token, type:'email' });
     $('verifyBtn').disabled = false;
     if(error){ setAuthMsg('验证失败：' + error.message); return; }
     // onAuthStateChange 会触发 enterApp
@@ -285,16 +321,20 @@
     // onAuthStateChange 会触发 showLogin
   }
 
-  // 登录后拉取真实 profiles（与客户端同一数据源）
+  // 登录后拉取真实 profiles（含 role，与客户端同一数据源）
   async function loadProfile(){
     currentProfile = null;
+    currentRole = 'user';
     try{
       const { data, error } = await sb
         .from('profiles')
-        .select('display_name, username, email, current_avatar_id, custom_avatar_url, level')
+        .select('display_name, username, email, current_avatar_id, custom_avatar_url, level, role')
         .eq('id', currentUser.id)
         .single();
-      if(!error && data) currentProfile = data;
+      if(!error && data){
+        currentProfile = data;
+        currentRole = (data.role === 'admin') ? 'admin' : 'user';
+      }
     }catch(e){}
   }
 
@@ -302,17 +342,19 @@
     const p = currentProfile;
     const name = profileName(p);
     const lvl = (p && p.level) ? p.level : 1;
+    const role = (currentRole === 'admin') ? '<span class="who-role">👑 管理员</span>' : '';
     $('who').innerHTML =
       avatarHtml(p && p.current_avatar_id, p && p.custom_avatar_url, 26)
-      + '<span class="who-name">' + escapeHtml(name) + '</span>'
-      + '<span class="who-lv">Lv.' + lvl + '</span>';
+      + '<span class="who-name">' + esc(name) + '</span>'
+      + '<span class="who-lv">Lv.' + lvl + '</span>'
+      + role;
   }
 
   async function enterApp(user){
     currentUser = user;
     $('loginWrap').style.display = 'none';
     $('appWrap').style.display = 'block';
-    await loadProfile();     // 取客户端资料（昵称/头像/等级）
+    await loadProfile();     // 取客户端资料（昵称/头像/等级/role）
     renderUserbar();
     loadBadwords();
     loadPosts('msg');
@@ -322,6 +364,8 @@
   function showLogin(){
     currentUser = null;
     currentProfile = null;
+    currentRole = 'user';
+    myLikes = new Set();
     $('appWrap').style.display = 'none';
     $('loginWrap').style.display = 'block';
     setAuthMsg('');
@@ -338,6 +382,51 @@
     }catch(e){}
   }
 
+  // 渲染一条帖子的「操作行 + 回复框 + 回复列表」
+  function renderPost(r, replies){
+    const liked = myLikes.has(r.id);
+    const likeBtn = '<button class="act like-btn'+(liked?' liked':'')+'" data-post="'+r.id+'">❤ <span class="like-count">'+(r.like_count||0)+'</span></button>';
+    const replyBtn = '<button class="act reply-toggle" data-post="'+r.id+'">💬 回复</button>';
+    const replyBox = '<div class="reply-box" id="rb-'+r.id+'" style="display:none">'
+      + '<textarea class="reply-input" maxlength="100" placeholder="回复楼主…（100 字以内）"></textarea>'
+      + '<div class="reply-actions"><button class="btn btn-primary reply-send" data-post="'+r.id+'">发送</button><button class="btn btn-ghost reply-cancel">取消</button></div>'
+      + '<div class="reply-err"></div></div>';
+    const replyListHtml = (replies && replies.length)
+      ? '<div class="reply-list">'+renderReplies(replies, null)+'</div>'
+      : '<div class="reply-list"><div class="empty">还没有回复，来抢沙发～</div></div>';
+    return '<div class="wall-item" data-id="'+r.id+'" data-owner="'+r.user_id+'">'
+      + '<div class="meta">'+ avatarHtmlFor(r,22)
+        + '<span class="name">'+esc(r.nickname||'匿名玩家')+'</span>'
+        + '<span class="lv">Lv.'+(r.level||1)+'</span>'
+        + '<span class="time">'+fmtTime(r.created_at)+'</span></div>'
+      + '<div class="txt">'+esc(r.content)+'</div>'
+      + '<div class="actions">'+likeBtn+replyBtn+'</div>'
+      + replyBox
+      + replyListHtml
+      + '</div>';
+  }
+
+  // 递归渲染楼中楼（两级）
+  function renderReplies(list, parentId){
+    const kids = list.filter(function(x){ return (x.parent_reply_id || null) === parentId; });
+    if(!kids.length) return '';
+    return kids.map(function(r){
+      const childHtml = renderReplies(list, r.id);
+      const adminBadge = r.is_admin ? '<span class="badge-admin">管理员</span>' : '';
+      const replyBtn = '<button class="act reply-toggle" data-post="'+r.post_id+'" data-parent="'+r.id+'">💬 回复</button>';
+      return '<div class="reply-item" data-id="'+r.id+'" data-owner="'+r.user_id+'" data-post="'+r.post_id+'">'
+        + '<div class="meta">'+ avatarHtmlFor(r,18)
+          + '<span class="name">'+esc(r.nickname||'匿名玩家')+'</span>'
+          + '<span class="lv">Lv.'+(r.level||1)+'</span>'
+          + adminBadge
+          + '<span class="time">'+fmtTime(r.created_at)+'</span></div>'
+        + '<div class="txt">'+esc(r.content)+'</div>'
+        + '<div class="actions">'+replyBtn+'</div>'
+        + (childHtml ? '<div class="reply-children">'+childHtml+'</div>' : '')
+        + '</div>';
+    }).join('');
+  }
+
   async function loadPosts(type){
     const list = $('' + type + 'List');
     const dbType = (type==='msg') ? 'message' : 'bug';
@@ -350,19 +439,22 @@
         .limit(50);
       if(error) throw error;
       if(!data || !data.length){ list.innerHTML = '<div class="empty">还没有内容，来抢沙发～</div>'; return; }
-      list.innerHTML = data.map(function(r){
-        const who = escapeHtml(r.nickname || '匿名玩家');
-        const lvl = r.level || 1;
-        const av = avatarHtml(r.current_avatar_id, r.custom_avatar_url, 22);
-        return '<div class="wall-item">'
-          + '<div class="meta">'
-          +   av
-          +   '<span class="name">'+who+'</span>'
-          +   '<span class="lv">Lv.'+lvl+'</span>'
-          +   '<span class="time">'+fmtTime(r.created_at)+'</span>'
-          + '</div>'
-          + '<div class="txt">'+escapeHtml(r.content)+'</div></div>';
-      }).join('');
+
+      const postIds = data.map(function(r){ return r.id; });
+
+      // 当前用户已赞的帖子
+      myLikes = new Set();
+      if(currentUser){
+        const { data: ld } = await sb.from('wall_likes').select('post_id').in('post_id', postIds).eq('user_id', currentUser.id);
+        if(ld) ld.forEach(function(x){ myLikes.add(x.post_id); });
+      }
+
+      // 这些帖子的全部回复
+      const { data: rd } = await sb.from('wall_replies').select('*').in('post_id', postIds).order('created_at');
+      const repliesByPost = {};
+      (rd||[]).forEach(function(r){ (repliesByPost[r.post_id] = repliesByPost[r.post_id] || []).push(r); });
+
+      list.innerHTML = data.map(function(r){ return renderPost(r, repliesByPost[r.id] || []); }).join('');
     }catch(e){
       list.innerHTML = '<div class="empty err">加载失败：'+(e.message||e)+'</div>';
     }
@@ -374,7 +466,7 @@
     input.addEventListener('input', function(){
       const c = input.value.trim().length;
       counter.textContent = c + ' / 100';
-      counter.classList.toggle('ok', c>=100);
+      counter.classList.toggle('over', c>100);
     });
   }
 
@@ -384,14 +476,10 @@
     const err = $('' + type + 'Error');
     const raw = input.value.trim();
     err.textContent = '';
-    if(raw.length < 100){ err.textContent = '至少需 100 字，当前 '+raw.length+' 字。'; return; }
+    if(raw.length === 0){ err.textContent = '写点内容再发吧～'; return; }
+    if(raw.length > 100){ err.textContent = '最多 100 字，当前 '+raw.length+' 字。'; return; }
     const masked = maskBad(raw);
-    // 不传 nickname：由数据库触发器从 profiles 取真实昵称/头像/等级，确保与客户端一致且不可伪造
-    const payload = {
-      user_id: currentUser.id,
-      type: (type==='msg') ? 'message' : 'bug',
-      content: masked
-    };
+    const payload = { user_id: currentUser.id, type: (type==='msg') ? 'message' : 'bug', content: masked };
     try{
       const { error } = await sb.from('wall_posts').insert(payload);
       if(error) throw error;
@@ -403,6 +491,159 @@
       err.textContent = '提交失败：' + (e.message || e);
     }
   }
+
+  // ---------- 点赞 ----------
+  async function toggleLike(postId){
+    if(!currentUser){ return; }
+    const wasLiked = myLikes.has(postId);
+    try{
+      if(wasLiked){
+        const { error } = await sb.from('wall_likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+        if(error) throw error;
+        myLikes.delete(postId);
+      }else{
+        const { error } = await sb.from('wall_likes').insert({ post_id: postId, user_id: currentUser.id });
+        if(error) throw error;
+        myLikes.add(postId);
+      }
+      // 读回最新点赞数（触发器已维护）
+      const { data } = await sb.from('wall_posts').select('like_count').eq('id', postId).single();
+      const cnt = data ? data.like_count : 0;
+      const btn = document.querySelector('.like-btn[data-post="'+postId+'"]');
+      if(btn){
+        btn.querySelector('.like-count').textContent = cnt;
+        btn.classList.toggle('liked', !wasLiked);
+      }
+    }catch(e){
+      alert('操作失败：' + (e.message || e));
+    }
+  }
+
+  // ---------- 回复 ----------
+  function buildComposer(postId, parentId){
+    const div = document.createElement('div');
+    div.className = 'reply-box';
+    div.innerHTML = '<textarea class="reply-input" maxlength="100" placeholder="回复…（100 字以内）"></textarea>'
+      + '<div class="reply-actions"><button class="btn btn-primary reply-send" data-post="'+postId+'" data-parent="'+(parentId||'')+'">发送</button><button class="btn btn-ghost reply-cancel">取消</button></div>'
+      + '<div class="reply-err"></div>';
+    return div;
+  }
+
+  function toggleReplyComposer(btn){
+    const postId = btn.dataset.post;
+    const parentId = btn.dataset.parent || null;
+    if(parentId){
+      const item = btn.closest('.reply-item');
+      const existing = item.querySelector(':scope > .reply-box');
+      if(existing){ existing.remove(); return; }
+      const box = buildComposer(postId, parentId);
+      const children = item.querySelector('.reply-children');
+      if(children) item.insertBefore(box, children); else item.appendChild(box);
+      box.querySelector('.reply-input').focus();
+    }else{
+      const box = $('rb-' + postId);
+      box.style.display = (box.style.display === 'none') ? 'block' : 'none';
+      if(box.style.display === 'block') box.querySelector('.reply-input').focus();
+    }
+  }
+
+  async function submitReply(btn){
+    const postId = btn.dataset.post;
+    const parentId = btn.dataset.parent || null;
+    const box = btn.closest('.reply-box');
+    const ta = box.querySelector('.reply-input');
+    const err = box.querySelector('.reply-err');
+    const raw = ta.value.trim();
+    err.textContent = '';
+    if(raw.length === 0){ err.textContent = '写点内容再发吧～'; return; }
+    if(raw.length > 100){ err.textContent = '最多 100 字，当前 '+raw.length+' 字。'; return; }
+    const masked = maskBad(raw);
+    btn.disabled = true;
+    try{
+      const { error } = await sb.from('wall_replies').insert({
+        post_id: postId, parent_reply_id: parentId, user_id: currentUser.id, content: masked
+      });
+      if(error) throw error;
+      await loadPosts('msg'); await loadPosts('bug');
+    }catch(e){
+      err.textContent = '发送失败：' + (e.message || e);
+      btn.disabled = false;
+    }
+  }
+
+  // ---------- 右键：删除 / 管理员查看作者 ----------
+  const ctxMenu = document.getElementById('ctxMenu');
+  let ctxTarget = null;
+  function hideCtx(){ ctxMenu.style.display = 'none'; ctxMenu.innerHTML = ''; ctxTarget = null; }
+
+  document.addEventListener('contextmenu', function(e){
+    const item = e.target.closest('.wall-item, .reply-item');
+    if(!item || !currentUser){ hideCtx(); return; }
+    const isOwner = item.dataset.owner === currentUser.id;
+    const isAdmin = currentRole === 'admin';
+    if(!isOwner && !isAdmin){ hideCtx(); return; }   // 只能操作自己发的，或管理员可操作任意
+    e.preventDefault();
+    ctxTarget = { kind: item.classList.contains('reply-item') ? 'reply' : 'post', id: item.dataset.id, owner: item.dataset.owner };
+    ctxMenu.innerHTML = '';
+    if(isAdmin){
+      const info = document.createElement('button');
+      info.className = 'info';
+      info.textContent = '👁 查看作者';
+      info.onclick = function(){ viewAuthor(ctxTarget.owner); };
+      ctxMenu.appendChild(info);
+    }
+    const del = document.createElement('button');
+    del.textContent = isAdmin ? '🗑 删除（管理员）' : '🗑 删除这条';
+    del.onclick = function(){ deleteItem(ctxTarget); };
+    ctxMenu.appendChild(del);
+    ctxMenu.style.display = 'block';
+    ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
+    ctxMenu.style.top  = Math.min(e.clientY, window.innerHeight - 70) + 'px';
+  });
+
+  document.addEventListener('click', function(e){ if(!ctxMenu.contains(e.target)) hideCtx(); });
+
+  async function viewAuthor(ownerId){
+    hideCtx();
+    try{
+      const { data, error } = await sb.from('profiles').select('email, display_name, username').eq('id', ownerId).single();
+      if(error) throw error;
+      const name = data ? (data.display_name || data.username || (data.email||'').split('@')[0]) : '未知';
+      alert('作者信息：\n昵称：' + name + '\n邮箱：' + (data && data.email ? data.email : '（无）') + '\nID：' + ownerId);
+    }catch(e){
+      alert('查看失败：' + (e.message || e));
+    }
+  }
+
+  async function deleteItem(t){
+    if(!confirm('确定删除吗？删除后不可恢复。')){ hideCtx(); return; }
+    try{
+      const table = (t.kind === 'reply') ? 'wall_replies' : 'wall_posts';
+      const { error } = await sb.from(table).delete().eq('id', t.id);  // RLS：本人或管理员
+      if(error) throw error;
+      hideCtx();
+      await loadPosts('msg'); await loadPosts('bug');
+    }catch(e){
+      alert('删除失败：' + (e.message || e));
+    }
+  }
+
+  // 列表点击委托（点赞 / 回复开关 / 发送 / 取消）
+  document.addEventListener('click', function(e){
+    const likeBtn = e.target.closest('.like-btn');
+    if(likeBtn){ toggleLike(likeBtn.dataset.post); return; }
+    const replyToggle = e.target.closest('.reply-toggle');
+    if(replyToggle){ toggleReplyComposer(replyToggle); return; }
+    const send = e.target.closest('.reply-send');
+    if(send){ submitReply(send); return; }
+    const cancel = e.target.closest('.reply-cancel');
+    if(cancel){
+      const box = cancel.closest('.reply-box');
+      if(box.id && box.id.indexOf('rb-') === 0){ box.style.display = 'none'; box.querySelector('.reply-input').value = ''; }
+      else { box.remove(); }
+      return;
+    }
+  });
 
   // ---------- 初始化 ----------
   window.addEventListener('DOMContentLoaded', function(){
